@@ -11,6 +11,8 @@ class Pendulum:
         self.blue = PWM(Pin(BluePin))
         self.red = PWM(Pin(redPin))
         self.swing = Pin(swingPin, Pin.OUT)
+        self._lightTimer = None
+        self._swingTimer = None
 
         self.red.freq(1000)
         self.green.freq(1000)

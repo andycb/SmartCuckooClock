@@ -10,11 +10,10 @@ class DialRing:
 
         self.np = neopixel.NeoPixel(Pin(dataPin), 20)
         self._pattern = None
+        self._refreshTimer = None
         
     def _swap_pattern_callback(self, t):
-        print("Try Swap Colour Ring")
         if self._pattern != None:
-            print("Swap Colour Ring")
             array = self._pattern.show()
             
             if array is None and self._refreshTimer is not None:
