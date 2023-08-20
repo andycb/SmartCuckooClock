@@ -12,6 +12,7 @@ import time
 import struct
 import _thread
 
+
 class Clock:
     def __init__(self, ap_name, ap_key) -> None:
         self._gpioLock = _thread.allocate_lock()
