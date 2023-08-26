@@ -18,6 +18,33 @@ class Pendulum:
         self.green.freq(1000)
         self.blue.freq(1000)
 
+        self._currentState = {
+            "state": "OFF",
+            "effect": "",
+            "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0
+            }
+        }
+
+    def _reset_state(self):
+        self._currentState["state"] = "OFF"
+        self._currentState["effect"] = ""
+        self._currentState["color"]["r"] = 0
+        self._currentState["color"]["g"] = 0
+        self._currentState["color"]["b"] = 0
+        
+
+    def get_light_state(self):
+        return self._currentState
+    
+    def get_swing_state(self):
+        if self.swing.value() == 1:
+            return "ON"
+        else:
+            return "OFF"
+
     def start_swing(self, duration_secs):
         self.swing.value(1)
 
@@ -39,6 +66,8 @@ class Pendulum:
         self.green.duty_u16(0)
         self.blue.duty_u16(0)
 
+        self._reset_state()
+
         if self._breatheTimer != None:
             self._breatheTimer.deinit()
 
@@ -51,9 +80,13 @@ class Pendulum:
         self.red.duty_u16(0)
         self.green.duty_u16(0)
         self.blue.duty_u16(0)
+
+        self._reset_state()
         
 
     def set_light(self, red, green, blue, breath, duration_secs):
+        if(green > 0 and blue > 0):
+            red = red * 0.6
 
         red_duty = (int)((red / 255) * 65025) if red > 0 else 0
         green_duty = (int)((green / 255) * 65025) if green > 0 else 0
@@ -77,6 +110,12 @@ class Pendulum:
         if (duration_secs > 0):
             self._lightTimer = Timer(mode=Timer.ONE_SHOT, period=duration_secs * 1000, callback=self._light_timer_callback)
 
+        self._currentState["state"] = "ON"
+        self._currentState["effect"] = "brethe" if breath else ""
+        self._currentState["color"]["r"] = red
+        self._currentState["color"]["g"] = green
+        self._currentState["color"]["b"] = blue
+
     def _breath_cyle2(self, t):
         current_red = self.red.duty_u16()
         current_green = self.green.duty_u16()
@@ -93,7 +132,7 @@ class Pendulum:
         new_green = current_green
         if self._breath_up:
             if (current_red < target_red):
-               new_red = min(current_red + step, 65025)
+               new_red = min(int(current_red + step * 0.6), 65025)
             if (current_blue < target_blue):
                 new_blue = min(current_blue + step, 65025)
             if (current_green < target_green):
@@ -103,7 +142,7 @@ class Pendulum:
                 self._breath_up = False
         else:
             if (current_red > 0):
-               new_red = max(current_red - step, 0)
+               new_red = max(int(current_red - step * 0.6), 0)
             if (current_blue > 0):
                 new_blue = max(current_blue - step, 0)
             if (current_green > 0):

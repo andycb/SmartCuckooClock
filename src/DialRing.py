@@ -3,7 +3,9 @@ from machine import Pin, Timer
 import neopixel
 import math
 from Colour import Colour
+import RingPatterns
 import time
+
 class DialRing:
     def __init__(self, dataPin, light_meater):
         self.light_meater = light_meater
@@ -11,6 +13,7 @@ class DialRing:
         self.np = neopixel.NeoPixel(Pin(dataPin), 20)
         self._pattern = None
         self._refreshTimer = None
+        self._colourOverride = None
         
     def _swap_pattern_callback(self, t):
         if self._pattern != None:
@@ -25,7 +28,9 @@ class DialRing:
                 return
             
             for i in range(20):
-                corrected = self._calculateColourForLightLevel(array[i], self.light_meater.GetOffset())
+                colour = self._colourOverride if self._colourOverride != None else array[i]
+                #corrected = self._calculateColourForLightLevel(array[i], self.light_meater.GetOffset())
+                corrected = colour
                 self.np[i] = (corrected.red, corrected.green, corrected.blue)
 
             self.np.write()
@@ -135,7 +140,26 @@ class DialRing:
     def clear(self):
         self.np.fill((0,0,0))
         self.np.write()
+        self._colourOverride = None
 
         if self._refreshTimer != None: 
             self._refreshTimer.deinit()
             self._refreshTimer = None
+
+    def set_dial_ring(self, colour, pattern):
+        self._colourOverride = colour
+        if (self._pattern != None):
+            self.clear()
+        
+        self.showPattern(RingPatterns.SolidPattern(colour) if pattern == None else pattern)
+
+    def get_state(self):
+        return {
+            "state": "OFF" if self._pattern == None else "ON",
+            "effect": "" if self._pattern == None and False else type(self._pattern).__name__,
+            "color": {
+                "r": 255 if self._colourOverride == None else self._colourOverride.red,
+                "g": 255 if self._colourOverride == None else self._colourOverride.green,
+                "b": 255 if self._colourOverride == None else self._colourOverride.blue,
+            }
+        }

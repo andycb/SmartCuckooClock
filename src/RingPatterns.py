@@ -1,8 +1,21 @@
 import time
 
-from machine import Timer
+from machine import Timer, RTC
 import math
 from Colour import Colour
+
+class SolidPattern:
+    def __init__(self, colour):
+         self._colour = colour
+
+    def start(self):
+        pass
+    
+    def stop(self):
+        pass
+
+    def show(self):
+        return [self._colour] * 20
 
 class ErrorPattern:
 
@@ -103,3 +116,74 @@ class CountdownPattern:
         if remainder > 0:
             brightness = (int)(100 * remainder)
             self._array[whole] = Colour(brightness,brightness,brightness)
+
+
+class AlertPattern:
+
+    def __init__(self):
+        self._current = 19
+        self._array = [Colour(0,0,0)] * 20
+        self._loops = 0
+        
+    def start(self):
+        self._timer = Timer(mode=Timer.PERIODIC, period=25, callback=self._callback)
+
+    def stop(self):
+        if self._timer != None:
+            self._timer.deinit()
+            self._timer = None
+            self._loop = 0
+
+    def show(self):
+        return self._array
+    
+    def _callback(self, t):
+        self._array = [Colour(0, 255,0)] * 20
+
+        if self._current < 0:
+            self._current = 19
+            if self._loops == 6:
+                self.stop()
+            else:
+                self._loops += 1
+
+        self._array[self._current] = Colour(0,0,255)
+        self._current -= 1
+
+class CurrentTimePattern:
+
+    def __init__(self):
+        self._current = 19
+        self._array = [Colour(0,0,0)] * 20
+        self._loops = 0
+        
+    def start(self):
+        self._timer = Timer(mode=Timer.PERIODIC, period=1000, callback=self._callback)
+
+    def stop(self):
+        if self._timer != None:
+            self._timer.deinit()
+            self._timer = None
+            self._loop = 0
+        
+        self._array = None
+
+    def show(self):
+        return self._array
+    
+    def _callback(self, t):
+        now = RTC().datetime()
+        self._array = [Colour(0,0,0)] * 20
+
+        h = now[4]
+        m = now[5]
+        s = now[6]
+
+        hourLed = (int)((h / 12) * 20)
+        minLed = (int)((m / 60) * 20)
+        secLed = (int)((s / 60) * 20)
+        
+        self._array[minLed] = Colour(0,0,10)
+        self._array[hourLed] = Colour(0,10,0)
+        #self._array[secLed] = Colour(3,0,0)
+    
