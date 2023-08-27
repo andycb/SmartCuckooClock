@@ -9,13 +9,15 @@ import socket
 import struct
 
 class ClockManager:
-    _helth_check_busy: bool = False
-    _trying_reconnection: bool = False
+    """
+        Manages the Smart Clock's connectivity and state
+    """
 
     def __init__(self) -> None:
         self._wlan = network.WLAN(network.STA_IF)
+        self._heath_check_busy = False
 
-    def boot(self):
+    def boot(self) -> None:
         self._clock = Clock()
         self._clock.reset()
 
@@ -28,7 +30,7 @@ class ClockManager:
                 self._connect_wifi(ClockSettings.wifi_name, ClockSettings.wifi_psk)
 
                 print("Setting RTC")
-                #self._set_time()
+                self._set_time()
 
                 print("Connecting MQTT")
                 self._mqtt_manager.connect()
@@ -39,17 +41,20 @@ class ClockManager:
             except:
                 print("Failed")
                 self._clock.show_boot_error()
+
+                # Wait 10 seconds and try boot up again
                 time.sleep(10)
 
-        # Check the clock's connection state, and reset if it disconnects
+        # Continually check the clock's connection state, and reset if it disconnects
         self._health_check_timer = Timer(mode=Timer.PERIODIC, period=1000, callback=self._health_check)
 
-    def _health_check(self, t):
-        if self._helth_check_busy:
-            print("Helth check is busy, Skipping.")
+    def _health_check(self, t: Timer) -> None:
+        if self._heath_check_busy:
+            print("Heath check is busy, Skipping.")
             return
         
         try:
+            # Check if we're still connected to the WiFi
             if self._wlan.status() != 3:
                 print ("Wifi connection lost. Attempting reconnect...")
                 try:
@@ -60,6 +65,7 @@ class ClockManager:
                     try:
                         self._mqtt_manager.stop()
                     except Exception as e:
+                        # Non-fatal, it will get garbage collected eventually anyway
                         print(f"Filed to stop MQTT client {e}")
 
                     self._wlan = network.WLAN(network.STA_IF)
@@ -73,6 +79,7 @@ class ClockManager:
                     print (f"Failed to re-connect to wifi {e}")
                     return
 
+            # Check if we're still connected to the MQTT server
             if self._mqtt_manager.is_connected is False:
                 print ("MQTT connection lost. Attempting reconnect...")
 
@@ -90,9 +97,9 @@ class ClockManager:
                 except Exception as e:
                     print (f"Failed to re-connect to MQTT {e}")
         finally:
-            self._helth_check_busy = False
+            self._heath_check_busy = False
                 
-    def _connect_wifi(self, name, psk):
+    def _connect_wifi(self, name: str, psk: str) -> None:
         self._wlan.active(True)
         self._wlan.connect(name, psk)
 
@@ -112,7 +119,7 @@ class ClockManager:
         status = self._wlan.ifconfig()
         print('IP = ' + status[0])
 
-    def _set_time(self):
+    def _set_time(self) -> None:
         NTP_DELTA = 2208988800
         host = "pool.ntp.org"
 
@@ -133,9 +140,3 @@ class ClockManager:
         tm = time.gmtime(t)
 
         RTC().datetime((tm[0], tm[1], tm[2], tm[6] + 1, tm[3], tm[4], tm[5], 0))
-
-
-
-
-
-

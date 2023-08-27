@@ -4,21 +4,39 @@ from machine import Timer, RTC
 import math
 from Colour import Colour
 
-class SolidPattern:
+class BasePattern():
+    """
+        BAse class for patterns that can be shown on the dial ring
+    """
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass
+
+    def show(self) -> list:
+        return []
+
+class SolidPattern(BasePattern):
+    """
+        A solid light of a given colour with no animation
+    """
     def __init__(self, colour):
          self._colour = colour
 
-    def start(self):
+    def start(self) -> None:
         pass
     
-    def stop(self):
+    def stop(self) -> None:
         pass
 
-    def show(self):
+    def show(self) -> list:
         return [self._colour] * 20
 
-class ErrorPattern:
-
+class ErrorPattern(BasePattern):
+    """
+        A counter-clockwise rotating ring os red lights, shown with the clock has an error.
+    """
     def __init__(self):
         self._current = 19
         self._array = [Colour(0,0,0)] * 20
@@ -43,8 +61,10 @@ class ErrorPattern:
         self._array[self._current] = Colour(0,0,0)
         self._current -= 1
 
-class BootingPattern:
-
+class BootingPattern(BasePattern):
+    """"
+        A single rotating green light, shown as the clock is connecting.
+    """
     def __init__(self):
         self._current = 19
         self._array = [Colour(0,0,0)] * 20
@@ -69,8 +89,10 @@ class BootingPattern:
         self._array[self._current] = Colour(0,50,0)
         self._current += 1
 
-class CountdownPattern:
-
+class CountdownPattern(BasePattern):
+    """
+        A countdown timer that uses the ring to show the percentage of the timer duration remaining.
+    """
     def __init__(self, timer_seconds):
         self._timer_seconds = timer_seconds
         self._end_time = time.ticks_add(time.ticks_ms(), timer_seconds * 1000)
@@ -95,8 +117,8 @@ class CountdownPattern:
             timer_ms = self._timer_seconds * 1000
             pc = diff / timer_ms
             pc = pc
-            normalised = 20 * pc
-            self._setValue(normalised, Colour(100,100,100))
+            normalized = 20 * pc
+            self._setValue(normalized, Colour(100,100,100))
 
         return self._array
 
@@ -118,8 +140,10 @@ class CountdownPattern:
             self._array[whole] = Colour(brightness,brightness,brightness)
 
 
-class AlertPattern:
-
+class AlertPattern(BasePattern):
+    """
+        A rapidly blue light on a green ring.
+    """
     def __init__(self):
         self._current = 19
         self._array = [Colour(0,0,0)] * 20
@@ -150,8 +174,10 @@ class AlertPattern:
         self._array[self._current] = Colour(0,0,255)
         self._current -= 1
 
-class CurrentTimePattern:
-
+class CurrentTimePattern(BasePattern):
+    """
+        Displays the current time. (very badly) 
+    """
     def __init__(self):
         self._current = 19
         self._array = [Colour(0,0,0)] * 20

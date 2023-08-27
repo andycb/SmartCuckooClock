@@ -1,13 +1,11 @@
 from ClockManager import ClockManager
 import time
 
+# Boot the clock
 global cm
 cm = ClockManager()
 cm.boot()
 
-time.sleep(15)
-print("Skilling wifi now..")
-cm._wlan.disconnect()
-
+# just spin so that the debugger can continue to catch console output
 while True:
-    time.sleep(0.5)
+    time.sleep(60)

@@ -1,18 +1,22 @@
 from machine import Pin, Timer, PWM
 
 class Pendulum:
+    """
+        Represents the clock's pendulum 
+    """
 
-    _tagetLight = (0,0,0)
-    _lightStopTime = 0
-    _breath_up = True
-
-    def __init__(self, redPin, greenPin, BluePin, swingPin) -> None:
+    def __init__(self, redPin: int, greenPin: int, BluePin: int, swingPin: int) -> None:
         self.green = PWM(Pin(greenPin))
         self.blue = PWM(Pin(BluePin))
         self.red = PWM(Pin(redPin))
         self.swing = Pin(swingPin, Pin.OUT)
+        
         self._lightTimer = None
         self._swingTimer = None
+
+        self._targetLight = (0,0,0)
+        self._lightStopTime = 0
+        self._breath_up = True
 
         self.red.freq(1000)
         self.green.freq(1000)
@@ -34,33 +38,34 @@ class Pendulum:
         self._currentState["color"]["r"] = 0
         self._currentState["color"]["g"] = 0
         self._currentState["color"]["b"] = 0
-        
 
-    def get_light_state(self):
+    def get_light_state(self) -> dict:
         return self._currentState
     
-    def get_swing_state(self):
+    def get_swing_state(self) -> str:
         if self.swing.value() == 1:
             return "ON"
         else:
             return "OFF"
 
-    def start_swing(self, duration_secs):
+    def start_swing(self, duration_secs: int) -> None:
         self.swing.value(1)
 
         if duration_secs > 0:
+            # Set a timer to stop the pendulum swinging again
             self._swingTimer = Timer(mode=Timer.ONE_SHOT, period=1000, callback=self._swing_timer_callback)
 
-    def stop_swing(self):
+    def stop_swing(self) -> None:
         self.swing.value(0)
         if self._swingTimer != None:
             self._swingTimer.deinit()
 
-    def _swing_timer_callback(self, t):
+    def _swing_timer_callback(self, t: Timer) -> None:
         self.stop_swing()
 
-    def _light_timer_callback(self, t):
-        self._tagetLight = (0, 0, 0)
+    def _light_timer_callback(self, t: Timer) -> None:
+        # Time to turn off the light, reset everything
+        self._targetLight = (0, 0, 0)
 
         self.red.duty_u16(0)
         self.green.duty_u16(0)
@@ -71,11 +76,11 @@ class Pendulum:
         if self._breatheTimer != None:
             self._breatheTimer.deinit()
 
-    def set_light_off(self):
+    def set_light_off(self) -> None:
         if (self._lightTimer != None):
             self._lightTimer.deinit()
         
-        self._tagetLight = (0, 0, 0)
+        self._targetLight = (0, 0, 0)
 
         self.red.duty_u16(0)
         self.green.duty_u16(0)
@@ -84,23 +89,28 @@ class Pendulum:
         self._reset_state()
         
 
-    def set_light(self, red, green, blue, breath, duration_secs):
+    def set_light(self, red: int, green: int, blue: int, breathe: bool, duration_secs: int) -> None:
         if(green > 0 and blue > 0):
-            red = red * 0.6
+            # The red LED is about a theird brighter the teh blue ans green ones, so
+            # if we're blending colours together, scale down the red value to match the others
+            redScaled = red * 0.6
+        else:
+            redScaled = red
 
-        red_duty = (int)((red / 255) * 65025) if red > 0 else 0
+        red_duty = (int)((redScaled / 255) * 65025) if redScaled > 0 else 0
         green_duty = (int)((green / 255) * 65025) if green > 0 else 0
         blue_duty = (int)((blue / 255) * 65025) if blue > 0 else 0
 
-        print(f"Set Light ({red},{green},{blue}) / ({red_duty}, {green_duty}, {blue_duty})")
+        print(f"Set Light ({redScaled},{green},{blue}) / ({red_duty}, {green_duty}, {blue_duty})")
 
-        self._tagetLight = (red_duty, green_duty, blue_duty)
+        self._targetLight = (red_duty, green_duty, blue_duty)
 
-        if breath == True:
+        if breathe == True:
+            # If set the breathe, set a timer to fade the light up ad down rhythmically
             self.red.duty_u16(0)
             self.green.duty_u16(0)
             self.blue.duty_u16(0)
-            self._breatheTimer = Timer(mode=Timer.PERIODIC, period=33, callback=self._breath_cyle2)
+            self._breatheTimer = Timer(mode=Timer.PERIODIC, period=33, callback=self._breath_cycle)
             
         else:
             self.red.duty_u16(red_duty)
@@ -108,22 +118,23 @@ class Pendulum:
             self.blue.duty_u16(blue_duty)
         
         if (duration_secs > 0):
+            # Create a timer to turn the light back off again
             self._lightTimer = Timer(mode=Timer.ONE_SHOT, period=duration_secs * 1000, callback=self._light_timer_callback)
 
         self._currentState["state"] = "ON"
-        self._currentState["effect"] = "brethe" if breath else ""
+        self._currentState["effect"] = "brethe" if breathe else ""
         self._currentState["color"]["r"] = red
         self._currentState["color"]["g"] = green
         self._currentState["color"]["b"] = blue
 
-    def _breath_cyle2(self, t):
+    def _breath_cycle(self, t: Timer) -> None:
         current_red = self.red.duty_u16()
         current_green = self.green.duty_u16()
         current_blue = self.blue.duty_u16()
 
-        target_red = self._tagetLight[0]
-        target_green = self._tagetLight[1]
-        target_blue = self._tagetLight[2]
+        target_red = self._targetLight[0]
+        target_green = self._targetLight[1]
+        target_blue = self._targetLight[2]
 
         step = (int)(65025 / 100)
 

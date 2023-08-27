@@ -21,7 +21,6 @@ class MqttManager:
         self._clock = clock
 
     def _check_messages(self, t: Timer) -> None:
-        print("MQTT MEssage check..")
         try:
             # Poll the MQTT to process messages sent to us
             self._mqtt_client.check_msg()

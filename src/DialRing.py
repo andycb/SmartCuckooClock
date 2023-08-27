@@ -4,21 +4,30 @@ import neopixel
 import math
 from Colour import Colour
 import RingPatterns
-import time
+from LightMeter import LightMeter
 
 class DialRing:
-    def __init__(self, dataPin, light_meater):
-        self.light_meater = light_meater
+    """
+        Represents the ring og RGB lights surrounding the clock dial
+    """
+
+    def __init__(self, dataPin: int, light_meter: LightMeter) -> None:
+        self._light_meter = light_meter
 
         self.np = neopixel.NeoPixel(Pin(dataPin), 20)
-        self._pattern = None
+        self._pattern = None 
         self._refreshTimer = None
         self._colourOverride = None
+
+        # Light meter isn't working quite right at the moment, so disable it
+        self._use_light_meter = False
         
-    def _swap_pattern_callback(self, t):
+    def _swap_pattern_callback(self, t: Timer) -> None:
         if self._pattern != None:
+            # Get the data for this frame
             array = self._pattern.show()
             
+            # If the pattern returns no data, stop it and clean up
             if array is None and self._refreshTimer is not None:
                 print("Pattern retruned None. Removing pattern")
                 self._refreshTimer.deinit()
@@ -27,19 +36,26 @@ class DialRing:
                 self.clear()
                 return
             
+            # Copy over the pattern data to the NeoPixel ring
             for i in range(20):
                 colour = self._colourOverride if self._colourOverride != None else array[i]
-                #corrected = self._calculateColourForLightLevel(array[i], self.light_meater.GetOffset())
+                
                 corrected = colour
+                if self._use_light_meter:
+                    # Dim the brightness according to the ambient light
+                    corrected = self._calculateColourForLightLevel(array[i], self._light_meter.GetOffset())
+                
                 self.np[i] = (corrected.red, corrected.green, corrected.blue)
 
+            # Show it!
             self.np.write()
             
         elif self._refreshTimer != None:
+                # If there is no longer an active pattern, stop the refresh timerß
                 self._refreshTimer.deinit()
                 self._refreshTimer = None
 
-    def _calculateColourForLightLevel(self, input, reading): 
+    def _calculateColourForLightLevel(self, input: Colour, reading: float) -> Colour: 
         brightnessOffset = reading * 60
 
         red = 0 if input.red is 0 else max(10, input.red - brightnessOffset)
@@ -54,82 +70,21 @@ class DialRing:
 
         return corrected
 
-    def showPattern(self, pattern):
-        print("Show pattern")
+    def showPattern(self, pattern) -> None:
         if self._pattern != None:
+            # Stop the current pattern if one is already running
             self._pattern.stop()
 
         if self._refreshTimer is None:
-            self._refreshTimer = Timer(mode=Timer.PERIODIC, period=30, callback=self._swap_pattern_callback)
+            # Refresh the ring at 30 FPS
+            period = int(1000 / 30)
+            self._refreshTimer = Timer(mode=Timer.PERIODIC, period=period, callback=self._swap_pattern_callback)
     
         self._pattern = pattern
         self._pattern.start()
-
-    def setTimeSnapped(self, h, m, s = None):
-        hourLed = (int)((h / 12) * 20)
-        minLed = (int)((m / 60) * 20)
         
-        print(hourLed)
-        print(minLed)
-        
-        self.clearNoShow()
-        self.np[minLed] = (0,0,10)
-        self.np[hourLed] = (10,0,0)
-        
-        if s is not None:
-            secLed = (int)((s / 60) * 20)
-            self.np[secLed] = (0,10,0)
-        
-        self.np.write()
-        
-    def setPercentage(self, pc):
-        normalised = (20 / 100) * pc
-        self.setValue(normalised)
-        
-    _currentLoadingState = 0
-    def _loading_callback(self, t):
-        self.clearNoShow()
-        
-        val = (0,0,0)
-        if self._currentLoadingState % 1 == 0:
-            val = (50,0,0)
-            
-        elif self._currentLoadingState % 2 == 0:
-            val = (0,50,0)
-            
-        else:
-            val = (0,0,50)
-        
-        self._currentLoadingState += 1
-        if (self._currentLoadingState > 20):
-            self._currentLoadingState = 0
-        
-        self.np[self._currentLoadingState] = val
-        self.np.write()
-            
-    def setValue(self, value, colour):
-        if value == 0:
-            self.clear()
-            return
-        
-        whole = math.floor(value)
-
-        for i in range (whole):
-            self.np[i] = colour
-            
-        for i in range (whole + 1, 20):
-            self.np[i] = (0,0,0)
-            
-        remainder = value - whole
-        if remainder > 0:
-            brightness = (int)(255 * remainder)
-            self.np[whole] = (brightness,brightness,brightness)
-        
-        
-        self.np.write()
-        
-        
-    def clearNoShow(self):
+    def clearNoShow(self) -> None:
+        # Clear the current array, but don't wrote it to the ring
         self.np.fill((0,0,0))
         self.np.write()
 
@@ -137,7 +92,8 @@ class DialRing:
             self._refreshTimer.deinit()
             self._refreshTimer = None
         
-    def clear(self):
+    def clear(self) -> None:
+        # Clear the current ring value
         self.np.fill((0,0,0))
         self.np.write()
         self._colourOverride = None
@@ -146,7 +102,7 @@ class DialRing:
             self._refreshTimer.deinit()
             self._refreshTimer = None
 
-    def set_dial_ring(self, colour, pattern):
+    def set_dial_ring(self, colour: Colour, pattern: RingPatterns.BasePattern) -> None:
         if colour.red == 0 and colour.green == 0 and colour.blue == 0:
             self.clear()
             return
@@ -156,7 +112,7 @@ class DialRing:
             self.clear()
         self.showPattern(RingPatterns.SolidPattern(colour) if pattern == None else pattern)
 
-    def get_state(self):
+    def get_state(self) -> dict:
         return {
             "state": "OFF" if self._pattern == None else "ON",
             "effect": "" if self._pattern == None and False else type(self._pattern).__name__,
