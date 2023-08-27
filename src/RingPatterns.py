@@ -179,6 +179,11 @@ class CurrentTimePattern:
         m = now[5]
         s = now[6]
 
+        print(f"Current time is {h}:{m}:{s} UTC+0")
+
+        if h >= 12:
+            h -= 12
+
         hourLed = (int)((h / 12) * 20)
         minLed = (int)((m / 60) * 20)
         secLed = (int)((s / 60) * 20)

@@ -147,10 +147,13 @@ class DialRing:
             self._refreshTimer = None
 
     def set_dial_ring(self, colour, pattern):
+        if colour.red == 0 and colour.green == 0 and colour.blue == 0:
+            self.clear()
+            return
+
         self._colourOverride = colour
         if (self._pattern != None):
             self.clear()
-        
         self.showPattern(RingPatterns.SolidPattern(colour) if pattern == None else pattern)
 
     def get_state(self):
