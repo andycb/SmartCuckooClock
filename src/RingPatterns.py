@@ -158,6 +158,8 @@ class AlertPattern(BasePattern):
             self._timer = None
             self._loop = 0
 
+        self._array = None
+
     def show(self):
         return self._array
     

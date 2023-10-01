@@ -20,7 +20,7 @@ class DialRing:
         self._colourOverride = None
 
         # Light meter isn't working quite right at the moment, so disable it
-        self._use_light_meter = False
+        self._use_light_meter = True
         
     def _swap_pattern_callback(self, t: Timer) -> None:
         if self._pattern != None:
@@ -88,19 +88,22 @@ class DialRing:
         self.np.fill((0,0,0))
         self.np.write()
 
+        self._pattern = None 
+        
         if self._refreshTimer != None: 
             self._refreshTimer.deinit()
             self._refreshTimer = None
         
     def clear(self) -> None:
+        if self._refreshTimer != None: 
+            self._refreshTimer.deinit()
+            self._refreshTimer = None
+    
         # Clear the current ring value
         self.np.fill((0,0,0))
         self.np.write()
         self._colourOverride = None
 
-        if self._refreshTimer != None: 
-            self._refreshTimer.deinit()
-            self._refreshTimer = None
 
     def set_dial_ring(self, colour: Colour, pattern: RingPatterns.BasePattern) -> None:
         if colour.red == 0 and colour.green == 0 and colour.blue == 0:

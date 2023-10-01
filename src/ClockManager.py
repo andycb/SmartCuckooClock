@@ -16,6 +16,7 @@ class ClockManager:
     def __init__(self) -> None:
         self._wlan = network.WLAN(network.STA_IF)
         self._heath_check_busy = False
+        self._trying_reconnection = False
 
     def boot(self) -> None:
         self._clock = Clock()
@@ -54,6 +55,9 @@ class ClockManager:
             return
         
         try:
+            #now = RTC().datetime()
+            #print(f'[{now[4]}:{now[5]}:{now[6]}] Starting health check')
+
             # Check if we're still connected to the WiFi
             if self._wlan.status() != 3:
                 print ("Wifi connection lost. Attempting reconnect...")
