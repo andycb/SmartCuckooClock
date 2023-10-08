@@ -77,10 +77,19 @@ class BootingPattern(BasePattern):
             self._timer.deinit()
             self._timer = None
 
+        self._array = None
+
     def show(self):
-        return self._array
+        if self._timer is None:
+            return None
+        else:
+            return self._array
     
     def _callback(self, t):
+        if self._timer is None:
+            self._array = None
+            return
+        
         self._array = [Colour(0, 0,0)] * 20
 
         if self._current > 19:
