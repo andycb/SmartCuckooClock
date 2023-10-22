@@ -1,4 +1,4 @@
-# SmartLitterBox
+# SmartCuckooClock
 
 A Raspberry Pi Pico Micropython firmware for a connected clock project. For the full write up of this project, see https://andybradford.dev/2023/10/22/building-a-connected-cuckoo-clock/.
 
