@@ -56,10 +56,19 @@ class Clock:
         self._chime.chime()
 
     def get_state(self) -> dict:
+        lightLevelInfo = self._lightMeter.GetOffsetAndRaw()
+
+        print("Pattern = " + type(self._dialRing._pattern).__name__)
+        countDownRemaining = 0
+        if (type(self._dialRing._pattern) == RingPatterns.CountdownPattern):
+            countDownRemaining = self._dialRing._pattern.getRemainingSeconds() # type: ignore
+
         return {
             "pendulum_light": json.dumps(self._pendulum.get_light_state()),
             "pendulum_swing": self._pendulum.get_swing_state(),
-            "light_level": self._lightMeter.GetOffset(), 
+            "light_level": str(lightLevelInfo["percent"]), 
+            "light_level_raw": str(lightLevelInfo["raw"]), 
             "chime": self._chime.get_state(), 
             "dial": json.dumps(self._dialRing.get_state()), 
+            "timer": json.dumps(countDownRemaining), 
         }

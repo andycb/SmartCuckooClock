@@ -103,7 +103,7 @@ class DialRing:
         self.np.fill((0,0,0))
         self.np.write()
         self._colourOverride = None
-
+        self._pattern = None
 
     def set_dial_ring(self, colour: Colour, pattern: RingPatterns.BasePattern) -> None:
         if colour.red == 0 and colour.green == 0 and colour.blue == 0:

@@ -11,6 +11,7 @@ class MqttManager:
     _last_chime_state: str = ""
     _last_timer_state: str = ""
     _last_light_sensor_state: str = ""
+    _last_light_sensor_raw_state: str = ""
     _mqtt_client: MQTTClient = None
     is_connected: bool = False
 
@@ -72,7 +73,7 @@ class MqttManager:
         device["name"] = "Cuckoo Clock"
         device["manufacturer"] = "andycb"
         device["model"] = "Cuckoo Clock"
-        device["sw_version"] = "2023.08.26"
+        device["sw_version"] = "2025.03.13"
 
         # Pendulum swing
         self.pendulum_swing_id = "cuckoo_clock_pendulum_swing"
@@ -172,7 +173,22 @@ class MqttManager:
         light_sensor_topic = f"{self.light_sensor_topic_prefix}/config"
 
         self._mqtt_client.publish(light_sensor_topic, json.dumps(light_sensor_payload))   
-    
+
+        # Light Sensor raw
+        self.light_sensor_raw_id = "cuckoo_clock_brightness_raw"
+        self.light_sensor_raw_topic_prefix = f"homeassistant/sensor/{self.light_sensor_raw_id}"
+
+        light_sensor_raw_payload = {}
+        light_sensor_raw_payload['name'] = 'Light Level Raw'
+        light_sensor_raw_payload['command_topic'] = f'{self.light_sensor_raw_topic_prefix}/set'
+        light_sensor_raw_payload['state_topic'] = f'{self.light_sensor_raw_topic_prefix}/state'
+        light_sensor_raw_payload['unique_id'] = self.light_sensor_raw_id
+        light_sensor_raw_payload["device"] = device
+        light_sensor_raw_topic = f"{self.light_sensor_raw_topic_prefix}/config"
+
+        self._mqtt_client.publish(light_sensor_raw_topic, json.dumps(light_sensor_raw_payload))   
+
+
     def _update_state(self, t: Timer) -> None:
         if self.is_connected == False:
             return
@@ -197,17 +213,29 @@ class MqttManager:
             if self._safe_publish(f'{self.dial_topic_prefix}/state', dial_state):
                 self._last_dial_state = dial_state
 
-        #light_level_state = state["light_level"]
-        #if light_level_state != self._last_light_sensor_state:
-            #print(f"Updating light level {light_level_state}")
-            #if self._safe_publish(f'{self.light_sensor_topic_prefix}/state', light_level_state):
-            #    self._last_light_sensor_state = light_level_state
+        light_level_state = state["light_level"]
+        if light_level_state != self._last_light_sensor_state:
+            print(f"Updating light level {light_level_state}")
+            if self._safe_publish(f'{self.light_sensor_topic_prefix}/state', light_level_state):
+               self._last_light_sensor_state = light_level_state
+
+        light_level_raw_state = state["light_level_raw"]
+        if light_level_raw_state != self._last_light_sensor_raw_state:
+            print(f"Updating light level raw {light_level_raw_state}")
+            if self._safe_publish(f'{self.light_sensor_raw_topic_prefix}/state', light_level_raw_state):
+               self._last_light_sensor_raw_state = light_level_raw_state
 
         chime_state = state["chime"]
         if chime_state != self._last_chime_state:
             print("Updating chime")
             if self._safe_publish(f'{self.chime_topic_prefix}/state', chime_state):
                 self._last_chime_state = chime_state
+
+        timer_state = state["timer"]
+        if timer_state != self._last_timer_state:
+            print("Updating timer")
+            if self._safe_publish(f'{self.timer_topic_prefix}/state', timer_state):
+                self._last_timer_state = timer_state
 
     def _handle_new_message(self, topic, message) -> None:
         topic = bytes.decode(topic)

@@ -108,6 +108,11 @@ class CountdownPattern(BasePattern):
 
         print(f"Timer set. Seconds = {timer_seconds}, Start time = {time.ticks_ms()}, End Time = {self._end_time}")
         
+    def getRemainingSeconds(self) -> int:
+        diff = time.ticks_diff(self._end_time, time.ticks_ms())
+        diff = max(0, diff)
+        return int(diff / 1000)
+
     def start(self):
         pass
 

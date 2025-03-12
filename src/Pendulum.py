@@ -90,6 +90,10 @@ class Pendulum:
         
 
     def set_light(self, red: int, green: int, blue: int, breathe: bool, duration_secs: int) -> None:
+        if (red == 0 and green == 0 and blue == 0):
+            self.set_light_off()
+            return
+        
         if(green > 0 and blue > 0):
             # The red LED is about a theird brighter the teh blue ans green ones, so
             # if we're blending colours together, scale down the red value to match the others

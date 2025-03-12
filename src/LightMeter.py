@@ -14,15 +14,21 @@ class LightMeter:
         self._cachedValue = 0
         pass
 
+    def GetOffsetAndRaw(self):
+        return {
+            "percent": self._cachedValue,
+            "raw": self._rawValue,
+        }
+
     def GetOffset(self) -> float:
         """
             Returns a value between 0 and 1, where 0 is the ful brightness and 1 is darkness
         """
         now = time.ticks_ms()
 
-        # The ADC is kind of slow, so cache all readings for 1 second
+        # The ADC is kind of slow, so cache all readings for 30 second
         if self._lastReadTicks is not None:
-            if time.ticks_diff(now, self._lastReadTicks) < 2000:
+            if time.ticks_diff(now, self._lastReadTicks) < 30000:
                 return self._cachedValue
             
         self._lastReadTicks = now
@@ -33,6 +39,9 @@ class LightMeter:
         value = min(self._max, value)
 
         percent = value / (self._max - self._min)
+        percent = max(percent, 0)
+        percent = min(percent, 1)
 
+        self._rawValue = rawValue
         self._cachedValue = percent
         return percent
